@@ -4,6 +4,10 @@ import re
 from dotenv import load_dotenv
 import sys
 import argparse
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -24,15 +28,18 @@ s3 = boto3.client('s3',
 bucket_name = 'developer-task'
 prefix = 'x-wing/'
 
+def get_s3_files() -> list:
+    """Retrieve a list of files from the S3 bucket."""
+    response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+    return [content['Key'] for content in response.get('Contents', [])] if 'Contents' in response else []
+
 def list_files() -> None:
     """List all files in the specified S3 bucket and prefix."""
-    response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
-    files = [content['Key'] for content in response.get('Contents', [])] if 'Contents' in response else []
-    
+    files = get_s3_files()
     if files:
-        print("List of files: ", files)
+        logger.info("List of files: %s", files)
     else:
-        print("No files found in the bucket.")
+        logger.info("No files found in the bucket.")
 
 def upload_file(file_path: str, s3_file_name: str) -> None:
     """Upload a local file to the specified location in the S3 bucket."""
